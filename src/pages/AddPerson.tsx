@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import Navigation from "@/components/Navigation";
-import { Calendar, User, Phone, Mail, MapPin } from "lucide-react";
+import PersonalInfoSection from "@/components/forms/PersonalInfoSection";
+import AddressSection from "@/components/forms/AddressSection";
+import ContactSection from "@/components/forms/ContactSection";
+import { User } from "lucide-react";
 
 const AddPerson = () => {
   const [formData, setFormData] = useState({
@@ -85,149 +85,33 @@ const AddPerson = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Basic Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="fullName">Full Name *</Label>
-                  <Input
-                    id="fullName"
-                    value={formData.fullName}
-                    onChange={(e) => handleInputChange("fullName", e.target.value)}
-                    placeholder="Enter full name"
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="dateOfBirth">Date of Birth *</Label>
-                  <div className="relative">
-                    <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="dateOfBirth"
-                      type="date"
-                      value={formData.dateOfBirth}
-                      onChange={(e) => handleInputChange("dateOfBirth", e.target.value)}
-                      className="pl-10"
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
+              <PersonalInfoSection
+                formData={{
+                  fullName: formData.fullName,
+                  dateOfBirth: formData.dateOfBirth,
+                  gender: formData.gender,
+                  nationalId: formData.nationalId,
+                }}
+                handleInputChange={handleInputChange}
+              />
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="gender">Gender *</Label>
-                  <Select value={formData.gender} onValueChange={(value) => handleInputChange("gender", value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select gender" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="male">Male</SelectItem>
-                      <SelectItem value="female">Female</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              <AddressSection
+                formData={{
+                  street: formData.street,
+                  city: formData.city,
+                  state: formData.state,
+                  zip: formData.zip,
+                }}
+                handleInputChange={handleInputChange}
+              />
 
-                <div className="space-y-2">
-                  <Label htmlFor="nationalId">National ID *</Label>
-                  <Input
-                    id="nationalId"
-                    value={formData.nationalId}
-                    onChange={(e) => handleInputChange("nationalId", e.target.value)}
-                    placeholder="Enter national ID"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Address Section */}
-              <div className="border-t pt-6">
-                <h3 className="text-lg font-semibold mb-4 flex items-center">
-                  <MapPin className="h-5 w-5 mr-2" />
-                  Address
-                </h3>
-                
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="street">Street Address</Label>
-                    <Input
-                      id="street"
-                      value={formData.street}
-                      onChange={(e) => handleInputChange("street", e.target.value)}
-                      placeholder="Enter street address"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="city">City</Label>
-                      <Input
-                        id="city"
-                        value={formData.city}
-                        onChange={(e) => handleInputChange("city", e.target.value)}
-                        placeholder="Enter city"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="state">State</Label>
-                      <Input
-                        id="state"
-                        value={formData.state}
-                        onChange={(e) => handleInputChange("state", e.target.value)}
-                        placeholder="Enter state"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="zip">ZIP Code</Label>
-                      <Input
-                        id="zip"
-                        value={formData.zip}
-                        onChange={(e) => handleInputChange("zip", e.target.value)}
-                        placeholder="Enter ZIP"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Contact Section */}
-              <div className="border-t pt-6">
-                <h3 className="text-lg font-semibold mb-4">Contact Information</h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number</Label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="phone"
-                        value={formData.phone}
-                        onChange={(e) => handleInputChange("phone", e.target.value)}
-                        placeholder="Enter phone number"
-                        className="pl-10"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email Address</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => handleInputChange("email", e.target.value)}
-                        placeholder="Enter email address"
-                        className="pl-10"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <ContactSection
+                formData={{
+                  phone: formData.phone,
+                  email: formData.email,
+                }}
+                handleInputChange={handleInputChange}
+              />
 
               <div className="flex gap-4 pt-6">
                 <Button type="submit" className="flex-1">
