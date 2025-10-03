@@ -1,7 +1,11 @@
 import { NavLink } from "react-router-dom";
-import { Users, Plus, Search, BarChart3, User } from "lucide-react";
+import { Users, Plus, Search, BarChart3, User, Shield, LogOut } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
 
 const Navigation = () => {
+  const { isAdmin, signOut } = useAuth();
+  
   const navItems = [
     { name: "Dashboard", path: "/dashboard", icon: Users },
     { name: "Add Person", path: "/add-person", icon: Plus },
@@ -22,7 +26,7 @@ const Navigation = () => {
           </div>
 
           {/* Navigation Links */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden md:flex items-center space-x-4">
             {navItems.map((item) => {
               const Icon = item.icon;
               return (
@@ -42,6 +46,32 @@ const Navigation = () => {
                 </NavLink>
               );
             })}
+            
+            {isAdmin && (
+              <NavLink
+                to="/admin"
+                className={({ isActive }) =>
+                  `flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive
+                      ? "bg-white/20 text-white"
+                      : "text-white/80 hover:text-white hover:bg-white/10"
+                  }`
+                }
+              >
+                <Shield className="h-4 w-4 mr-2" />
+                Admin
+              </NavLink>
+            )}
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => signOut()}
+              className="text-white/80 hover:text-white hover:bg-white/10"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
+            </Button>
           </div>
 
           {/* Mobile menu button */}
