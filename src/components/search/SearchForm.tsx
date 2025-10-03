@@ -11,7 +11,7 @@ interface SearchFormProps {
   isSearching: boolean;
   onSearchTermChange: (value: string) => void;
   onFilterChange: (value: string) => void;
-  onSearch: () => void;
+  onSearch: (e: React.FormEvent) => void;
   onClear: () => void;
 }
 
@@ -36,46 +36,47 @@ const SearchForm = ({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <div className="md:col-span-2 space-y-2">
-            <Label htmlFor="searchTerm">Search Term</Label>
-            <div className="relative">
-              <SearchIcon className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="searchTerm"
-                value={searchTerm}
-                onChange={(e) => onSearchTermChange(e.target.value)}
-                placeholder="Search by name, email, national ID, or phone..."
-                className="pl-10"
-              />
+        <form onSubmit={onSearch}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div className="md:col-span-2 space-y-2">
+              <Label htmlFor="searchTerm">Search Term</Label>
+              <div className="relative">
+                <SearchIcon className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="searchTerm"
+                  value={searchTerm}
+                  onChange={(e) => onSearchTermChange(e.target.value)}
+                  placeholder="Search by name, email, national ID, or phone..."
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="filterBy">Filter by Gender</Label>
+              <Select value={filterBy} onValueChange={onFilterChange}>
+                <SelectTrigger>
+                  <Filter className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="All genders" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Genders</SelectItem>
+                  <SelectItem value="male">Male</SelectItem>
+                  <SelectItem value="female">Female</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="filterBy">Filter by Gender</Label>
-            <Select value={filterBy} onValueChange={onFilterChange}>
-              <SelectTrigger>
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="All genders" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Genders</SelectItem>
-                <SelectItem value="male">Male</SelectItem>
-                <SelectItem value="female">Female</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="flex gap-4">
+            <Button type="submit" disabled={isSearching}>
+              {isSearching ? "Searching..." : "Search"}
+            </Button>
+            <Button type="button" variant="outline" onClick={onClear}>
+              Clear
+            </Button>
           </div>
-        </div>
-        
-        <div className="flex gap-4">
-          <Button onClick={onSearch} disabled={isSearching}>
-            {isSearching ? "Searching..." : "Search"}
-          </Button>
-          <Button variant="outline" onClick={onClear}>
-            Clear
-          </Button>
-        </div>
+        </form>
       </CardContent>
     </Card>
   );

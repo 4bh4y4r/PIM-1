@@ -1,0 +1,102 @@
+
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String          @id @default(uuid())
+  email          String          @unique
+  password       String
+  name           String?
+  role           Role            @default(USER)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  persons        Person[]
+  activityLogs   ActivityLog[]
+
+  @@map("users")
+}
+
+model Person {
+  id             String          @id @default(uuid())
+  firstName      String
+  lastName       String
+  email          String?
+  phone          String?
+  address        String?
+  dateOfBirth    DateTime?
+  profileImage   String?
+  tags           String?
+  notes          String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  createdBy      User            @relation(fields: [createdById], references: [id])
+  createdById    String
+  groups         GroupMember[]
+  relationships  Relationship[]  @relation("PersonRelationship")
+  relatedTo      Relationship[]  @relation("RelatedToPerson")
+  activityLogs   ActivityLog[]
+
+  @@map("persons")
+}
+
+model Group {
+  id             String          @id @default(uuid())
+  name           String
+  description    String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  members        GroupMember[]
+
+  @@map("groups")
+}
+
+model GroupMember {
+  id             String          @id @default(uuid())
+  group          Group           @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId        String
+  person         Person          @relation(fields: [personId], references: [id], onDelete: Cascade)
+  personId       String
+  role           String?
+  joinedAt       DateTime        @default(now())
+
+  @@unique([groupId, personId])
+  @@map("group_members")
+}
+
+model Relationship {
+  id             String          @id @default(uuid())
+  person         Person          @relation("PersonRelationship", fields: [personId], references: [id], onDelete: Cascade)
+  personId       String
+  relatedPerson  Person          @relation("RelatedToPerson", fields: [relatedPersonId], references: [id], onDelete: Cascade)
+  relatedPersonId String
+  type           String
+  createdAt      DateTime        @default(now())
+
+  @@unique([personId, relatedPersonId, type])
+  @@map("relationships")
+}
+
+model ActivityLog {
+  id             String          @id @default(uuid())
+  action         String
+  details        String?
+  timestamp      DateTime        @default(now())
+  user           User            @relation(fields: [userId], references: [id])
+  userId         String
+  person         Person?         @relation(fields: [personId], references: [id])
+  personId       String?
+
+  @@map("activity_logs")
+}
+
+enum Role {
+  USER
+  ADMIN
+}

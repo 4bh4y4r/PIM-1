@@ -1,7 +1,22 @@
-import { NavLink } from "react-router-dom";
-import { Users, Plus, Search, BarChart3, User } from "lucide-react";
+import { NavLink, useNavigate } from "react-router-dom";
+import { Users, Plus, Search, BarChart3, User, LogOut, ArrowLeft } from "lucide-react";
+import { Button } from "./ui/button";
+import { useState, useEffect } from "react";
 
 const Navigation = () => {
+  const navigate = useNavigate();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [username, setUsername] = useState("");
+  
+  useEffect(() => {
+    const user = localStorage.getItem('user');
+    if (user) {
+      const userData = JSON.parse(user);
+      setIsAdmin(userData.role === 'ADMIN');
+      setUsername(userData.username || userData.email);
+    }
+  }, []);
+
   const navItems = [
     { name: "Dashboard", path: "/dashboard", icon: Users },
     { name: "Add Person", path: "/add-person", icon: Plus },
@@ -9,15 +24,36 @@ const Navigation = () => {
     { name: "Reports", path: "/reports", icon: BarChart3 },
   ];
 
+  if (isAdmin) {
+    navItems.push({ name: "Admin", path: "/admin", icon: User });
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/login');
+  };
+
+  const handleBack = () => {
+    navigate(-1);
+  };
+
   return (
     <nav className="bg-navigation text-navigation-foreground shadow-elegant">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           {/* Logo/Brand */}
           <div className="flex items-center">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={handleBack} 
+              className="mr-2 text-white/80 hover:text-white hover:bg-white/10"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
             <div className="flex-shrink-0 flex items-center">
-              <User className="h-8 w-8 mr-3" />
-              <h1 className="text-xl font-bold">Personal Info System</h1>
+              <h1 className="text-xl font-bold">Person Hub</h1>
             </div>
           </div>
 
@@ -42,6 +78,20 @@ const Navigation = () => {
                 </NavLink>
               );
             })}
+          </div>
+
+          {/* User menu */}
+          <div className="hidden md:flex items-center">
+            <span className="text-sm mr-4">{username}</span>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleLogout}
+              className="text-white/80 hover:text-white hover:bg-white/10 flex items-center"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
+            </Button>
           </div>
 
           {/* Mobile menu button */}

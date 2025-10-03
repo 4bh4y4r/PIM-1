@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navigation from "@/components/Navigation";
 import SearchForm from "@/components/search/SearchForm";
 import SearchResults from "@/components/search/SearchResults";
 import NoResults from "@/components/search/NoResults";
+import { useToast } from "@/hooks/use-toast";
 
 interface SearchResult {
   id: string;
@@ -19,74 +20,57 @@ const Search = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterBy, setFilterBy] = useState("all");
   const [isSearching, setIsSearching] = useState(false);
-
-  // Mock search results
-  const mockResults: SearchResult[] = [
-    {
-      id: "1",
-      fullName: "John Doe",
-      dateOfBirth: "1990-05-15",
-      gender: "Male",
-      nationalId: "123456789",
-      city: "New York",
-      phone: "(555) 123-4567",
-      email: "john.doe@email.com",
-    },
-    {
-      id: "2",
-      fullName: "Jane Smith",
-      dateOfBirth: "1985-08-22",
-      gender: "Female",
-      nationalId: "987654321",
-      city: "Los Angeles",
-      phone: "(555) 987-6543",
-      email: "jane.smith@email.com",
-    },
-    {
-      id: "3",
-      fullName: "Michael Johnson",
-      dateOfBirth: "1992-12-03",
-      gender: "Male",
-      nationalId: "456789123",
-      city: "Chicago",
-      phone: "(555) 456-7890",
-      email: "m.johnson@email.com",
-    },
-  ];
-
   const [results, setResults] = useState<SearchResult[]>([]);
+  const [hasSearched, setHasSearched] = useState(false);
+  const { toast } = useToast();
 
-  const handleSearch = () => {
-    setIsSearching(true);
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchTerm.trim()) return;
     
-    // Simulate API call
-    setTimeout(() => {
-      let filteredResults = mockResults;
+    setIsSearching(true);
+    setHasSearched(true);
+    
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication required');
+      }
       
-      if (searchTerm.trim()) {
-        filteredResults = mockResults.filter(person =>
-          person.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          person.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          person.nationalId.includes(searchTerm) ||
-          person.phone.includes(searchTerm)
-        );
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/persons/search?term=${encodeURIComponent(searchTerm)}&filter=${filterBy}`, 
+        {
+          mode: 'cors',
+          credentials: 'include',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+      
+      if (!response.ok) {
+        throw new Error('Failed to search persons');
       }
-
-      if (filterBy !== "all") {
-        filteredResults = filteredResults.filter(person =>
-          person.gender.toLowerCase() === filterBy.toLowerCase()
-        );
-      }
-
-      setResults(filteredResults);
+      
+      const data = await response.json();
+      setResults(data);
+      
+    } catch (error) {
+      toast({
+        title: "Search Error",
+        description: error instanceof Error ? error.message : "Failed to perform search",
+        variant: "destructive"
+      });
+      setResults([]);
+    } finally {
       setIsSearching(false);
-    }, 800);
+    }
   };
-
   const handleClearSearch = () => {
     setSearchTerm("");
     setFilterBy("all");
     setResults([]);
+    setHasSearched(false);
   };
 
   return (
