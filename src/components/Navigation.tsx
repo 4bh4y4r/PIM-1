@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { Users, Plus, Search, BarChart3, User, LogOut, ArrowLeft, Eye } from "lucide-react";
+import { Users, Plus, Search, BarChart3, User, LogOut, ArrowLeft, Eye, UserCircle, Settings } from "lucide-react";
 import { Button } from "./ui/button";
 import { useState, useEffect } from "react";
 
@@ -20,13 +20,18 @@ const Navigation = () => {
   const navItems = [
     { name: "Dashboard", path: "/dashboard", icon: Users },
     { name: "Add Person", path: "/add-person", icon: Plus },
-    { name: "Search", path: "/search", icon: Search },
-    { name: "Reports", path: "/reports", icon: BarChart3 },
+    { name: "My Info", path: "/my-info", icon: UserCircle },
+    { name: "Profile", path: "/profile", icon: Settings },
   ];
 
   if (isAdmin) {
-    navItems.push({ name: "View Records", path: "/view-records", icon: Eye });
-    navItems.push({ name: "Admin", path: "/admin", icon: User });
+    navItems.push(
+      { name: "Search", path: "/search", icon: Search },
+      { name: "Reports", path: "/reports", icon: BarChart3 },
+      { name: "View Records", path: "/view-records", icon: Eye },
+      { name: "User Management", path: "/user-management", icon: User },
+      { name: "Admin", path: "/admin", icon: Settings }
+    );
   }
 
   const handleLogout = () => {

@@ -134,3 +134,42 @@ export const deleteUser = async (req: Request, res: Response) => {
     return res.status(500).json({ message: 'Server error while deleting user' });
   }
 };
+
+// Update user role (admin only)
+export const updateUserRole = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { role } = req.body;
+    
+    // Check if user exists
+    const existingUser = await prisma.user.findUnique({
+      where: { id }
+    });
+    
+    if (!existingUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Update user role
+    const updatedUser = await prisma.user.update({
+      where: { id },
+      data: { role },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    });
+    
+    return res.status(200).json({
+      message: 'User role updated successfully',
+      user: updatedUser
+    });
+  } catch (error) {
+    console.error('Error updating user role:', error);
+    return res.status(500).json({ message: 'Server error while updating user role' });
+  }
+};

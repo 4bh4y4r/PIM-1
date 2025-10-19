@@ -11,6 +11,9 @@ import Search from "./pages/Search";
 import Reports from "./pages/Reports";
 import Admin from "./pages/Admin";
 import ViewRecords from "./pages/ViewRecords";
+import MyInfo from "./pages/MyInfo";
+import Profile from "./pages/Profile";
+import UserManagement from "./pages/UserManagement";
 import NotFound from "./pages/NotFound";
 import { useEffect, useState } from "react";
 
@@ -83,6 +86,21 @@ const App = () => (
           <Route path="/view-records" element={
             <ProtectedRoute adminOnly={true}>
               <ViewRecords />
+            </ProtectedRoute>
+          } />
+          <Route path="/my-info" element={
+            <ProtectedRoute>
+              <MyInfo />
+            </ProtectedRoute>
+          } />
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          } />
+          <Route path="/user-management" element={
+            <ProtectedRoute adminOnly={true}>
+              <UserManagement />
             </ProtectedRoute>
           } />
           <Route path="/admin" element={
