@@ -148,16 +148,7 @@ export const getActivityStats = async (req: Request, res: Response): Promise<voi
     const lastWeekDate = new Date();
     lastWeekDate.setDate(lastWeekDate.getDate() - 7);
 
-    // Get counts by entity type
-    // Since entityType is no longer in the schema, we'll group by details instead
-    const entityTypeCounts = await prisma.activityLog.groupBy({
-      by: ['details'],
-      _count: {
-        id: true
-      }
-    });
-
-    // Get counts by action type
+    // Get counts by action type for recent activity
     const actionCounts = await prisma.activityLog.groupBy({
       by: ['action'],
       _count: {
@@ -165,12 +156,11 @@ export const getActivityStats = async (req: Request, res: Response): Promise<voi
       }
     });
 
-    // Get recent activity count (last 7 days)
+    // Get recent activity count (last 7 days) - using timestamp field
     const recentActivityCount = await prisma.activityLog.count({
       where: {
-        // Using id as a proxy since createdAt is not in the schema
-        id: {
-          not: undefined
+        timestamp: {
+          gte: lastWeekDate
         }
       }
     });
@@ -178,20 +168,45 @@ export const getActivityStats = async (req: Request, res: Response): Promise<voi
     // Get total activity count
     const totalActivityCount = await prisma.activityLog.count();
 
+    // Calculate specific metrics for Recent Activity Summary
+    const newRecords = actionCounts.find(item => item.action === 'CREATE')?._count.id || 0;
+    const updatesMade = actionCounts.find(item => item.action === 'UPDATE')?._count.id || 0;
+    
+    // For searches and reports, we'll use a different approach since they might not be in activity logs
+    // Let's count search activities and report generation activities
+    const searchesPerformed = await prisma.activityLog.count({
+      where: {
+        details: {
+          contains: 'search'
+        }
+      }
+    });
+
+    const reportsGenerated = await prisma.activityLog.count({
+      where: {
+        details: {
+          contains: 'report'
+        }
+      }
+    });
+
     // Format the response
     const stats = {
       totalActivities: totalActivityCount,
       recentActivities: recentActivityCount,
-      byEntityType: entityTypeCounts.map((item) => ({
-        type: item.details || 'Unknown',
-        count: item._count.id
-      })),
+      recentActivitySummary: {
+        newRecords,
+        updatesMade,
+        searchesPerformed,
+        reportsGenerated
+      },
       byAction: actionCounts.map((item: { action: string; _count: { id: number } }) => ({
         action: item.action,
         count: item._count.id
       }))
     };
 
+    console.log('Activity stats:', stats);
     res.status(200).json({ stats });
   } catch (error) {
     console.error('Error getting activity statistics:', error);

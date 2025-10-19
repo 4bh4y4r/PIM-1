@@ -789,6 +789,12 @@
                         "recentPersons": {
                           "type": "integer"
                         },
+                        "activePersons": {
+                          "type": "integer"
+                        },
+                        "incompletePersons": {
+                          "type": "integer"
+                        },
                         "topTags": {
                           "type": "array",
                           "items": {

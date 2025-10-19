@@ -73,7 +73,16 @@ export const login = async (req: Request, res: Response) => {
     // Generate token
     const token = generateToken(user);
 
-    // Return user data and token
+    // Set token as HTTP-only cookie
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: false, // set to true if using HTTPS
+      sameSite: 'lax', // or 'none' if using HTTPS and cross-origin
+      path: '/',
+      // domain: '192.168.1.31' // uncomment if needed for your setup
+    });
+
+    // Return user data and token (for flexibility)
     return res.status(200).json({
       message: 'Login successful',
       user: {

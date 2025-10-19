@@ -38,22 +38,40 @@ const Search = () => {
       }
       
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/persons/search?term=${encodeURIComponent(searchTerm)}&filter=${filterBy}`, 
+        `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/search/persons?query=${encodeURIComponent(searchTerm)}`, 
         {
           mode: 'cors',
           credentials: 'include',
           headers: {
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
           }
         }
       );
       
       if (!response.ok) {
-        throw new Error('Failed to search persons');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to search persons');
       }
       
       const data = await response.json();
-      setResults(data);
+      console.log('Search results:', data); // Debug log
+      
+      if (!data || !data.persons) {
+        console.error('Unexpected response format:', data);
+        throw new Error('Invalid response format from server');
+      }
+      
+      setResults(data.persons.map(person => ({
+        id: person.id,
+        fullName: `${person.firstName} ${person.lastName}`,
+        dateOfBirth: person.dateOfBirth,
+        gender: person.gender,
+        nationalId: person.nationalId,
+        city: person.city,
+        phone: person.phone,
+        email: person.email
+      })));
       
     } catch (error) {
       toast({

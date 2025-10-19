@@ -19,24 +19,26 @@ export const authenticate = async (
   next: NextFunction
 ) => {
   try {
+    let token;
     const authHeader = req.headers.authorization;
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    // Check Authorization header
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    } else if (req.cookies && req.cookies.token) {
+      // Check cookies
+      token = req.cookies.token;
+    }
+    if (!token) {
       return res.status(401).json({ message: 'Authentication required' });
     }
-
-    const token = authHeader.split(' ')[1];
     const decoded = verifyToken(token);
-
     if (!decoded) {
       return res.status(401).json({ message: 'Invalid or expired token' });
     }
-
     // Get user from database
     const user = await prisma.user.findUnique({
       where: { id: decoded.id }
     });
-
     if (!user) {
       return res.status(401).json({ message: 'User not found' });
     }

@@ -134,6 +134,30 @@ export const getPersonStats = async (req: Request, res: Response) => {
       }
     });
     
+    // Count active records (records with email and phone)
+    const activePersons = await prisma.person.count({
+      where: {
+        AND: [
+          { email: { not: null } },
+          { phone: { not: null } },
+          { email: { not: "" } },
+          { phone: { not: "" } }
+        ]
+      }
+    });
+    
+    // Count incomplete records (missing email or phone)
+    const incompletePersons = await prisma.person.count({
+      where: {
+        OR: [
+          { email: null },
+          { phone: null },
+          { email: "" },
+          { phone: "" }
+        ]
+      }
+    });
+    
     // Count persons by tags (top 5)
     const personsWithTags = await prisma.person.findMany({
       where: {
@@ -168,11 +192,181 @@ export const getPersonStats = async (req: Request, res: Response) => {
       stats: {
         totalPersons,
         recentPersons,
+        activePersons,
+        incompletePersons,
         topTags
       }
     });
   } catch (error) {
     console.error('Get person stats error:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Get demographic statistics
+export const getDemographicStats = async (req: Request, res: Response) => {
+  try {
+    // Get all persons with their data
+    const persons = await prisma.person.findMany({
+      select: {
+        dateOfBirth: true,
+        address: true,
+        notes: true,
+        phone: true,
+        email: true,
+      }
+    });
+
+    console.log('Fetched persons for demographics:', persons.length);
+
+    // Calculate gender distribution from notes field
+    const genderStats = { Male: 0, Female: 0, Other: 0 };
+    persons.forEach(person => {
+      if (person.notes) {
+        const genderMatch = person.notes.match(/Gender:\s*(\w+)/i);
+        if (genderMatch) {
+          const gender = genderMatch[1].toLowerCase();
+          if (gender === 'male') genderStats.Male++;
+          else if (gender === 'female') genderStats.Female++;
+          else genderStats.Other++;
+        }
+      }
+    });
+
+    console.log('Gender stats:', genderStats);
+
+    // Calculate age groups
+    const ageGroups = { '18-25': 0, '26-35': 0, '36-45': 0, '46-55': 0, '55+': 0 };
+    const currentYear = new Date().getFullYear();
+    
+    persons.forEach(person => {
+      if (person.dateOfBirth) {
+        const birthYear = new Date(person.dateOfBirth).getFullYear();
+        const age = currentYear - birthYear;
+        
+        if (age >= 18 && age <= 25) ageGroups['18-25']++;
+        else if (age >= 26 && age <= 35) ageGroups['26-35']++;
+        else if (age >= 36 && age <= 45) ageGroups['36-45']++;
+        else if (age >= 46 && age <= 55) ageGroups['46-55']++;
+        else if (age > 55) ageGroups['55+']++;
+      }
+    });
+
+    console.log('Age groups:', ageGroups);
+
+    // Calculate city distribution from address field
+    const cityStats: Record<string, number> = {};
+    persons.forEach(person => {
+      if (person.address && person.address.trim() !== '') {
+        // Extract city from address (assuming format: "street, city, state zip")
+        const addressParts = person.address.split(',');
+        if (addressParts.length >= 2) {
+          const city = addressParts[1].trim();
+          if (city) {
+            cityStats[city] = (cityStats[city] || 0) + 1;
+          }
+        }
+      }
+    });
+
+    // Get top 5 cities
+    const topCities = Object.entries(cityStats)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([city, count]) => ({ city, count }));
+
+    console.log('Top cities:', topCities);
+
+    // Calculate contact completeness - use actual phone and email fields
+    const totalPersons = persons.length;
+    const withPhone = persons.filter(p => p.phone && p.phone.trim() !== '').length;
+    const withEmail = persons.filter(p => p.email && p.email.trim() !== '').length;
+    const withAddress = persons.filter(p => p.address && p.address.trim() !== '').length;
+
+    console.log('Contact completeness:', { total: totalPersons, phone: withPhone, email: withEmail, address: withAddress });
+
+    const result = {
+      demographics: {
+        gender: genderStats,
+        ageGroups,
+        topCities,
+        contactCompleteness: {
+          total: totalPersons,
+          phone: withPhone,
+          email: withEmail,
+          address: withAddress
+        }
+      }
+    };
+
+    console.log('Final demographics result:', result);
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error('Get demographic stats error:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Get dashboard statistics
+export const getDashboardStats = async (req: Request, res: Response) => {
+  try {
+    // Total count of persons
+    const totalPersons = await prisma.person.count();
+    
+    // Count persons created in the last 7 days (this week)
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    
+    const newThisWeek = await prisma.person.count({
+      where: {
+        createdAt: {
+          gte: oneWeekAgo
+        }
+      }
+    });
+    
+    // Count active searches (activities with search in details)
+    const activeSearches = await prisma.activityLog.count({
+      where: {
+        details: {
+          contains: 'search'
+        }
+      }
+    });
+    
+    // Count searches from today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const todaysSearches = await prisma.activityLog.count({
+      where: {
+        AND: [
+          {
+            details: {
+              contains: 'search'
+            }
+          },
+          {
+            timestamp: {
+              gte: today
+            }
+          }
+        ]
+      }
+    });
+
+    console.log('Dashboard stats:', { totalPersons, newThisWeek, activeSearches, todaysSearches });
+
+    return res.status(200).json({
+      dashboardStats: {
+        totalRecords: totalPersons,
+        newThisWeek: newThisWeek,
+        activeSearches: todaysSearches, // Using today's searches as "active"
+        totalSearches: activeSearches   // Total searches for reference
+      }
+    });
+  } catch (error) {
+    console.error('Get dashboard stats error:', error);
     return res.status(500).json({ message: 'Server error' });
   }
 };

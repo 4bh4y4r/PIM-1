@@ -10,6 +10,7 @@ import AddPerson from "./pages/AddPerson";
 import Search from "./pages/Search";
 import Reports from "./pages/Reports";
 import Admin from "./pages/Admin";
+import ViewRecords from "./pages/ViewRecords";
 import NotFound from "./pages/NotFound";
 import { useEffect, useState } from "react";
 
@@ -77,6 +78,11 @@ const App = () => (
           <Route path="/reports" element={
             <ProtectedRoute>
               <Reports />
+            </ProtectedRoute>
+          } />
+          <Route path="/view-records" element={
+            <ProtectedRoute adminOnly={true}>
+              <ViewRecords />
             </ProtectedRoute>
           } />
           <Route path="/admin" element={

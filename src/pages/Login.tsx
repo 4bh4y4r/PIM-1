@@ -19,7 +19,7 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      const response = await fetch(`http://localhost:5000/api/auth/login`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/login`, {
         method: 'POST',
         mode: 'cors',
         credentials: 'include',
@@ -44,7 +44,7 @@ const Login = () => {
       
       // Redirect based on user role
       if (data.user.role === 'ADMIN') {
-        navigate("/admin");
+        navigate("/dashboard");
       } else {
         navigate("/dashboard");
       }

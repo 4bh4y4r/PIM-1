@@ -7,7 +7,7 @@ interface NoResultsProps {
 }
 
 const NoResults = ({ searchTerm, isSearching }: NoResultsProps) => {
-  if (!searchTerm || isSearching) return null;
+  if (isSearching) return null;
 
   return (
     <Card className="shadow-card">

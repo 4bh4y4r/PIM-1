@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { Users, Plus, Search, BarChart3, User, LogOut, ArrowLeft } from "lucide-react";
+import { Users, Plus, Search, BarChart3, User, LogOut, ArrowLeft, Eye } from "lucide-react";
 import { Button } from "./ui/button";
 import { useState, useEffect } from "react";
 
@@ -25,6 +25,7 @@ const Navigation = () => {
   ];
 
   if (isAdmin) {
+    navItems.push({ name: "View Records", path: "/view-records", icon: Eye });
     navItems.push({ name: "Admin", path: "/admin", icon: User });
   }
 

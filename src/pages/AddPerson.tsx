@@ -29,7 +29,7 @@ const AddPerson = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Basic validation
@@ -42,25 +42,73 @@ const AddPerson = () => {
       return;
     }
 
-    // In real app, this would submit to backend
-    toast({
-      title: "Success!",
-      description: "Person record has been saved successfully.",
-    });
+    try {
+      // Split fullName into firstName and lastName
+      const [firstName = "", lastName = ""] = formData.fullName.split(" ");
+      
+      // Debug information
+      console.log('Form data:', formData);
+      console.log('API URL:', import.meta.env.VITE_API_URL);
 
-    // Reset form
-    setFormData({
-      fullName: "",
-      dateOfBirth: "",
-      gender: "",
-      nationalId: "",
-      street: "",
-      city: "",
-      state: "",
-      zip: "",
-      phone: "",
-      email: "",
-    });
+      console.log('Making API request to:', `${import.meta.env.VITE_API_URL}/api/persons`);
+      
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/persons`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          firstName,
+          lastName,
+          dateOfBirth: formData.dateOfBirth,
+          phone: formData.phone,
+          email: formData.email,
+          address: `${formData.street}, ${formData.city}, ${formData.state} ${formData.zip}`.trim(),
+          notes: `Gender: ${formData.gender}\nNational ID: ${formData.nationalId}`,
+        })
+      });
+
+      const responseText = await response.text();
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error('Response was not JSON:', responseText);
+        throw new Error('Server response was not in JSON format');
+      }
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to create person');
+      }
+      console.log('Person created:', data);
+      
+      toast({
+        title: "Success!",
+        description: "Person record has been saved successfully.",
+      });
+      
+      // Reset form
+      setFormData({
+        fullName: "",
+        dateOfBirth: "",
+        gender: "",
+        nationalId: "",
+        street: "",
+        city: "",
+        state: "",
+        zip: "",
+        phone: "",
+        email: "",
+      });
+    } catch (error) {
+      console.error('Error creating person:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create person. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
