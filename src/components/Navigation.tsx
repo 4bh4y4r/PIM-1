@@ -19,7 +19,7 @@ const Navigation = () => {
 
   const navItems = [
     { name: "Dashboard", path: "/dashboard", icon: Users },
-    { name: "Add Person", path: "/add-person", icon: Plus },
+    { name: "Add Info", path: "/add-person", icon: Plus },
     { name: "Profile", path: "/profile", icon: Settings },
   ];
 

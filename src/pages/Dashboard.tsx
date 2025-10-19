@@ -91,7 +91,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState('all');
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
@@ -306,7 +306,7 @@ const Dashboard = () => {
     });
   };
 
-  // Filter records based on search term and filters
+  // Filter records based on search term, categories, and date
   const filteredRecords = records.filter(record => {
     const searchTermLower = searchTerm.toLowerCase();
     const matchesSearch = 
@@ -316,7 +316,28 @@ const Dashboard = () => {
         value => typeof value === 'string' && value.toLowerCase().includes(searchTermLower)
       );
     
-    const matchesCategory = categoryFilter === 'all' || record.category === categoryFilter;
+    // Category filter
+    let matchesCategory = categoryFilter === 'all';
+    
+    if (categoryFilter === 'Personal') {
+      matchesCategory = record.category === 'Personal' || 
+        (record.data && (record.data.firstName || record.data.lastName || record.data.gender));
+    } else if (categoryFilter === 'Address') {
+      matchesCategory = record.category === 'Address' || 
+        (record.data && record.data.address);
+    } else if (categoryFilter === 'Identification') {
+      matchesCategory = record.category === 'Identification' || 
+        (record.data && (record.data.nationalId || record.data.gender));
+    } else if (categoryFilter === 'Education') {
+      matchesCategory = record.category === 'Education' || 
+        (record.data && record.data.education);
+    } else if (categoryFilter === 'Financial') {
+      matchesCategory = record.category === 'Financial' || 
+        (record.data && (record.data.income || record.data.occupation));
+    } else if (categoryFilter === 'Health') {
+      matchesCategory = record.category === 'Health' || 
+        (record.data && record.data.healthInfo);
+    }
     
     let matchesDate = true;
     if (dateFilter !== 'all') {
@@ -522,13 +543,13 @@ const Dashboard = () => {
               </div>
               
               {loading ? (
-        <div className="flex justify-center items-center h-64">
-          <p>Loading records...</p>
-        </div>
-      ) : error ? (
-        <div className="flex justify-center items-center h-64">
-          <p className="text-red-500">{error}</p>
-        </div>
+                <div className="flex justify-center items-center h-64">
+                  <p>Loading records...</p>
+                </div>
+              ) : error ? (
+                <div className="flex justify-center items-center h-64">
+                  <p className="text-red-500">{error}</p>
+                </div>
               ) : filteredRecords.length === 0 ? (
                 <div className="flex flex-col justify-center items-center h-64 p-6 text-center">
                   <FileText className="h-12 w-12 text-muted-foreground mb-4" />
@@ -558,140 +579,25 @@ const Dashboard = () => {
                   </TabsList>
                   
                   <TabsContent value="table">
-                    <div className="rounded-md border">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Title</TableHead>
-                            <TableHead>Category</TableHead>
-                            <TableHead>Created</TableHead>
-                            <TableHead>Documents</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {filteredRecords.map((record) => (
-                            <TableRow key={record.id}>
-                              <TableCell className="font-medium">
-                                {record.title}
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant="outline" className="mr-1 mb-1">
-                                  {record.category}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>{new Date(record.createdAt).toLocaleDateString()}</TableCell>
-                              <TableCell>{record.documentCount}</TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex justify-end space-x-2">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleView(record)}
-                                  >
-                                    <User className="h-4 w-4" />
-                                    <span className="sr-only">View</span>
-                                  </Button>
-                                  
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleEdit(record)}
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                    <span className="sr-only">Edit</span>
-                                  </Button>
-                                  
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleDownload(record)}
-                                  >
-                                    <Download className="h-4 w-4" />
-                                    <span className="sr-only">Download</span>
-                                  </Button>
-                                  
-                                  <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                        <span className="sr-only">Delete</span>
-                                      </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                      <AlertDialogHeader>
-                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                          This will permanently delete the record "{record.title}".
-                                          This action cannot be undone.
-                                        </AlertDialogDescription>
-                                      </AlertDialogHeader>
-                                      <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction
-                                          onClick={() => handleDelete(record.id)}
-                                          className="bg-red-600 hover:bg-red-700"
-                                        >
-                                          Delete
-                                        </AlertDialogAction>
-                                      </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                  </AlertDialog>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </TabsContent>
-                  
-                  <TabsContent value="cards">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="space-y-6">
                       {filteredRecords.map((record) => (
-                        <Card key={record.id} className="overflow-hidden">
-                          <CardHeader className="pb-2">
-                            <div className="flex justify-between items-start">
-                              <CardTitle className="text-lg">{record.title}</CardTitle>
-                              <Badge variant="outline">{record.category}</Badge>
-                            </div>
-                          </CardHeader>
-                          <CardContent className="pb-2">
-                            <div className="text-sm text-muted-foreground mb-2">
-                              Created: {new Date(record.createdAt).toLocaleDateString()}
-                            </div>
-                            {record.documentCount > 0 && (
-                              <div className="text-sm text-muted-foreground mb-4">
-                                Documents: {record.documentCount}
-                              </div>
-                            )}
-                            <div className="flex space-x-2 mt-4">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleView(record)}
-                              >
-                                <User className="h-4 w-4 mr-1" />
-                                View
-                              </Button>
-                              <Button
-                                variant="outline"
+                        <div key={record.id} className="p-6 border rounded-lg">
+                          <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-bold">{record.title}</h2>
+                            <div className="flex gap-2">
+                              <Button 
+                                variant="outline" 
                                 size="sm"
                                 onClick={() => handleEdit(record)}
                               >
-                                <Edit className="h-4 w-4 mr-1" />
-                                Edit
+                                <Edit className="h-4 w-4 mr-2" /> Edit
                               </Button>
-                              <Button
-                                variant="outline"
+                              <Button 
+                                variant="outline" 
                                 size="sm"
-                                onClick={() => handleDownload(record)}
+                                onClick={() => handleView(record)}
                               >
-                                <Download className="h-4 w-4 mr-1" />
-                                Download
+                                <User className="h-4 w-4 mr-2" /> View
                               </Button>
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
@@ -700,8 +606,7 @@ const Dashboard = () => {
                                     size="sm"
                                     className="text-red-500 border-red-200 hover:bg-red-50"
                                   >
-                                    <Trash2 className="h-4 w-4 mr-1" />
-                                    Delete
+                                    <Trash2 className="h-4 w-4 mr-2" /> Delete
                                   </Button>
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
@@ -724,8 +629,175 @@ const Dashboard = () => {
                                 </AlertDialogContent>
                               </AlertDialog>
                             </div>
-                          </CardContent>
-                        </Card>
+                          </div>
+                          
+                          {(categoryFilter === 'all' || categoryFilter === 'Personal') && (
+                            <div className="mb-4 p-4 border rounded-md">
+                              <h3 className="text-lg font-medium mb-2">Personal Information</h3>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div><strong>First Name:</strong> {record.data?.firstName || 'N/A'}</div>
+                                <div><strong>Last Name:</strong> {record.data?.lastName || 'N/A'}</div>
+                                <div><strong>Email:</strong> {record.data?.email || 'N/A'}</div>
+                                <div><strong>Phone:</strong> {record.data?.phone || 'N/A'}</div>
+                                <div><strong>Gender:</strong> {record.data?.gender || 'N/A'}</div>
+                                <div><strong>Date of Birth:</strong> {record.data?.dateOfBirth || 'N/A'}</div>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {(categoryFilter === 'all' || categoryFilter === 'Address') && (
+                            <div className="mb-4 p-4 border rounded-md">
+                              <h3 className="text-lg font-medium mb-2">Address Information</h3>
+                              <div><strong>Address:</strong> {record.data?.address || 'N/A'}</div>
+                            </div>
+                          )}
+                          
+                          {(categoryFilter === 'all' || categoryFilter === 'Identification') && (
+                            <div className="mb-4 p-4 border rounded-md">
+                              <h3 className="text-lg font-medium mb-2">Identification Information</h3>
+                              <div><strong>National ID:</strong> {record.data?.nationalId || 'N/A'}</div>
+                            </div>
+                          )}
+                          
+                          {(categoryFilter === 'all' || categoryFilter === 'Education') && (
+                            <div className="mb-4 p-4 border rounded-md">
+                              <h3 className="text-lg font-medium mb-2">Education Information</h3>
+                              <div><strong>Education:</strong> {record.data?.education || 'N/A'}</div>
+                            </div>
+                          )}
+                          
+                          {(categoryFilter === 'all' || categoryFilter === 'Financial') && (
+                            <div className="mb-4 p-4 border rounded-md">
+                              <h3 className="text-lg font-medium mb-2">Financial Information</h3>
+                              <div><strong>Occupation:</strong> {record.data?.occupation || 'N/A'}</div>
+                              <div><strong>Income:</strong> {record.data?.income || 'N/A'}</div>
+                            </div>
+                          )}
+                          
+                          {(categoryFilter === 'all' || categoryFilter === 'Health') && (
+                            <div className="mb-4 p-4 border rounded-md">
+                              <h3 className="text-lg font-medium mb-2">Health Information</h3>
+                              <div><strong>Health Info:</strong> {record.data?.healthInfo || 'N/A'}</div>
+                            </div>
+                          )}
+                          
+                          <div className="mt-4 text-sm text-muted-foreground">
+                            Added on {new Date(record.createdAt).toLocaleDateString()} • 
+                            Category: <Badge variant="outline">{record.category}</Badge>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="cards">
+                    <div className="space-y-6">
+                      {filteredRecords.map((record) => (
+                        <div key={record.id} className="p-6 border rounded-lg">
+                          <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-bold">{record.title}</h2>
+                            <div className="flex gap-2">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => handleEdit(record)}
+                              >
+                                <Edit className="h-4 w-4 mr-2" /> Edit
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => handleView(record)}
+                              >
+                                <User className="h-4 w-4 mr-2" /> View
+                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-red-500 border-red-200 hover:bg-red-50"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" /> Delete
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This will permanently delete the record "{record.title}".
+                                      This action cannot be undone.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => handleDelete(record.id)}
+                                      className="bg-red-600 hover:bg-red-700"
+                                    >
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
+                          </div>
+                          
+                          {(categoryFilter === 'all' || categoryFilter === 'Personal') && (
+                            <div className="mb-4 p-4 border rounded-md">
+                              <h3 className="text-lg font-medium mb-2">Personal Information</h3>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div><strong>First Name:</strong> {record.data?.firstName || 'N/A'}</div>
+                                <div><strong>Last Name:</strong> {record.data?.lastName || 'N/A'}</div>
+                                <div><strong>Email:</strong> {record.data?.email || 'N/A'}</div>
+                                <div><strong>Phone:</strong> {record.data?.phone || 'N/A'}</div>
+                                <div><strong>Gender:</strong> {record.data?.gender || 'N/A'}</div>
+                                <div><strong>Date of Birth:</strong> {record.data?.dateOfBirth || 'N/A'}</div>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {(categoryFilter === 'all' || categoryFilter === 'Address') && (
+                            <div className="mb-4 p-4 border rounded-md">
+                              <h3 className="text-lg font-medium mb-2">Address Information</h3>
+                              <div><strong>Address:</strong> {record.data?.address || 'N/A'}</div>
+                            </div>
+                          )}
+                          
+                          {(categoryFilter === 'all' || categoryFilter === 'Identification') && (
+                            <div className="mb-4 p-4 border rounded-md">
+                              <h3 className="text-lg font-medium mb-2">Identification Information</h3>
+                              <div><strong>National ID:</strong> {record.data?.nationalId || 'N/A'}</div>
+                            </div>
+                          )}
+                          
+                          {(categoryFilter === 'all' || categoryFilter === 'Education') && (
+                            <div className="mb-4 p-4 border rounded-md">
+                              <h3 className="text-lg font-medium mb-2">Education Information</h3>
+                              <div><strong>Education:</strong> {record.data?.education || 'N/A'}</div>
+                            </div>
+                          )}
+                          
+                          {(categoryFilter === 'all' || categoryFilter === 'Financial') && (
+                            <div className="mb-4 p-4 border rounded-md">
+                              <h3 className="text-lg font-medium mb-2">Financial Information</h3>
+                              <div><strong>Occupation:</strong> {record.data?.occupation || 'N/A'}</div>
+                              <div><strong>Income:</strong> {record.data?.income || 'N/A'}</div>
+                            </div>
+                          )}
+                          
+                          {(categoryFilter === 'all' || categoryFilter === 'Health') && (
+                            <div className="mb-4 p-4 border rounded-md">
+                              <h3 className="text-lg font-medium mb-2">Health Information</h3>
+                              <div><strong>Health Info:</strong> {record.data?.healthInfo || 'N/A'}</div>
+                            </div>
+                          )}
+                          
+                          <div className="mt-4 text-sm text-muted-foreground">
+                            Added on {new Date(record.createdAt).toLocaleDateString()} • 
+                            Category: <Badge variant="outline">{record.category}</Badge>
+                          </div>
+                        </div>
                       ))}
                     </div>
                   </TabsContent>

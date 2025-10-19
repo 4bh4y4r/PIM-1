@@ -76,6 +76,11 @@ const App = () => (
               <InfoForm />
             </ProtectedRoute>
           } />
+          <Route path="/edit-info/:id" element={
+            <ProtectedRoute>
+              <InfoForm />
+            </ProtectedRoute>
+          } />
           <Route path="/search" element={
             <ProtectedRoute>
               <Search />

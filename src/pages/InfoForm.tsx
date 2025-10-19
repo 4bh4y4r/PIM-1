@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
@@ -29,8 +29,94 @@ import {
 const InfoForm = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { id } = useParams();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
   const [expandedSections, setExpandedSections] = useState<string[]>(["personal"]);
+  
+  useEffect(() => {
+    if (id) {
+      setIsEditMode(true);
+      fetchRecordData(id);
+    }
+  }, [id]);
+  
+  const fetchRecordData = async (recordId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        navigate('/login');
+        return;
+      }
+      
+      const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/persons/${recordId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch record data');
+      }
+      
+      const data = await response.json();
+      
+      // Parse address and notes fields
+      let street = '', city = '', state = '', zip = '';
+      if (data.address) {
+        const addressParts = data.address.split(',');
+        street = addressParts[0]?.trim() || '';
+        city = addressParts[1]?.trim() || '';
+        const stateZip = addressParts[2]?.trim().split(' ') || [];
+        state = stateZip[0] || '';
+        zip = stateZip[1] || '';
+      }
+      
+      // Parse notes field
+      let gender = '', nationalId = '', education = '', occupation = '', income = '', healthInfo = '';
+      if (data.notes) {
+        const notes = data.notes;
+        gender = notes.match(/Gender: (.*?)(?:\n|$)/)?.[1] || '';
+        nationalId = notes.match(/National ID: (.*?)(?:\n|$)/)?.[1] || '';
+        education = notes.match(/Education: (.*?)(?:\n|$)/)?.[1] || '';
+        occupation = notes.match(/Occupation: (.*?)(?:\n|$)/)?.[1] || '';
+        income = notes.match(/Income: (.*?)(?:\n|$)/)?.[1] || '';
+        healthInfo = notes.match(/Health Info: (.*?)(?:\n|$)/)?.[1] || '';
+      }
+      
+      setFormData({
+        firstName: data.firstName || '',
+        lastName: data.lastName || '',
+        dateOfBirth: data.dateOfBirth || '',
+        gender,
+        email: data.email || '',
+        phone: data.phone || '',
+        nationalId,
+        aadhaarNumber: '',
+        panNumber: '',
+        passportNumber: '',
+        rationCardNumber: '',
+        street,
+        city,
+        state,
+        zip,
+        education,
+        occupation,
+        income,
+        healthInfo,
+        category: data.tags || 'Personal'
+      });
+      
+    } catch (error) {
+      console.error('Error fetching record:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load record data. Please try again.',
+        variant: 'destructive'
+      });
+    }
+  };
+  
   const [formData, setFormData] = useState({
     // Personal details
     firstName: "",
@@ -45,6 +131,7 @@ const InfoForm = () => {
     panNumber: "",
     passportNumber: "",
     rationCardNumber: "",
+    nationalId: "",
     
     // Address info
     street: "",
@@ -143,8 +230,13 @@ const InfoForm = () => {
         tags: `${formData.category || 'Personal'}`
       };
       
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/persons`, {
-        method: 'POST',
+      // Set the API endpoint and method based on whether we're editing or creating
+      const url = isEditMode 
+        ? `${import.meta.env.VITE_API_URL || ''}/api/persons/${id}`
+        : `${import.meta.env.VITE_API_URL || ''}/api/persons`;
+        
+      const response = await fetch(url, {
+        method: isEditMode ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
@@ -185,7 +277,7 @@ const InfoForm = () => {
       <div className="max-w-4xl mx-auto">
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl">Add New Information</CardTitle>
+            <CardTitle className="text-2xl">{isEditMode ? 'Edit Information' : 'Add New Information'}</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit}>
