@@ -11,8 +11,9 @@ A comprehensive person management system with role-based access control, built w
 - **Protected Routes**: Role-specific page access
 
 ### 👤 User Features (Regular Users)
-- **Dashboard**: View, edit, and delete personal records with integrated search functionality
+- **Dashboard**: Overview with personal statistics
 - **Add Person**: Create new person records
+- **My Info**: View, edit, and delete personal records
 - **Profile**: Manage account information and change password
 - **Personal Statistics**: Track submitted records and activity
 

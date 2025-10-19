@@ -204,7 +204,7 @@ const Profile = () => {
                 <div className="flex items-center gap-2 mt-1">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">
-                    {new Date().toLocaleDateString()}
+                    {new Date(userProfile.createdAt).toLocaleDateString()}
                   </span>
                 </div>
               </div>
@@ -309,7 +309,7 @@ const Profile = () => {
               </div>
               <div className="text-center p-4 border rounded-lg">
                 <div className="text-2xl font-bold text-primary">
-                  {new Date().toLocaleDateString()}
+                  {new Date(userProfile.createdAt).toLocaleDateString()}
                 </div>
                 <div className="text-sm text-muted-foreground">Joined Date</div>
               </div>

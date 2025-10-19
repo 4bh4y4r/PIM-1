@@ -7,6 +7,8 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import AddPerson from "./pages/AddPerson";
+import InfoForm from "./pages/InfoForm";
+
 import Search from "./pages/Search";
 import Reports from "./pages/Reports";
 import Admin from "./pages/Admin";
@@ -68,9 +70,10 @@ const App = () => (
               <Dashboard />
             </ProtectedRoute>
           } />
-          <Route path="/add-person" element={
+          <Route path="/add-person" element={<Navigate to="/info-form" replace />} />
+          <Route path="/info-form" element={
             <ProtectedRoute>
-              <AddPerson />
+              <InfoForm />
             </ProtectedRoute>
           } />
           <Route path="/search" element={
