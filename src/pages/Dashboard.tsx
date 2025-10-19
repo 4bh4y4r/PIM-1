@@ -106,9 +106,14 @@ const Dashboard = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if user is admin
-    const userRole = localStorage.getItem('userRole');
-    setIsAdmin(userRole === 'admin');
+    // Check if user is admin (from stored user object)
+    const user = localStorage.getItem('user');
+    if (user) {
+      const u = JSON.parse(user);
+      setIsAdmin(u.role === 'ADMIN');
+    } else {
+      setIsAdmin(false);
+    }
     
     fetchRecords();
   }, [window.location.pathname]);
@@ -117,8 +122,6 @@ const Dashboard = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const userRole = localStorage.getItem('userRole');
-      const isAdmin = userRole === 'admin';
       
       // For regular users, fetch all records
       const endpoint = `${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/persons`;
@@ -150,19 +153,18 @@ const Dashboard = () => {
       // Check if data is an array, if not, handle it appropriately
       const dataArray = Array.isArray(data) ? data : data.persons || [];
       
-      // Transform the data to match our new InfoRecord interface
-      // This is temporary until the backend is updated
+      // Transform the data to match our InfoRecord interface
       const transformedData = dataArray.map((person: any) => ({
         id: person.id,
         title: `${person.firstName} ${person.lastName}`,
-        category: 'Personal',
+        category: person.tags || 'Personal',
         createdAt: person.createdAt,
         updatedAt: person.updatedAt,
         createdBy: person.createdBy,
         documentCount: 0, // Placeholder until we implement document uploads
         data: {
           ...person,
-          category: 'Personal'
+          category: person.tags || 'Personal'
         }
       }));
       

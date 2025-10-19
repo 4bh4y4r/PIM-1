@@ -667,42 +667,48 @@ const InfoForm = () => {
                   </AccordionContent>
                 </AccordionItem>
 
-                {/* Document Uploads Section */}
-                <AccordionItem value="documents">
-                  <AccordionTrigger onClick={() => toggleSection("documents")} className="py-4">
-                    <div className="flex items-center gap-2">
-                      <Upload className="h-5 w-5" />
-                      <span>Document Uploads</span>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <div className="space-y-4 mb-6">
-                      <div className="space-y-2">
-                        <Label htmlFor="documents">Upload Documents (PDF, JPG)</Label>
-                        <Input 
-                          id="documents" 
-                          type="file" 
-                          multiple
-                          accept=".pdf,.jpg,.jpeg,.png"
-                          onChange={handleFileChange}
-                          className="cursor-pointer"
-                        />
-                      </div>
-                      {formData.documents && formData.documents.length > 0 && (
-                        <div className="space-y-2">
-                          <Label>Uploaded Files</Label>
-                          <ul className="list-disc pl-5">
-                            {formData.documents.map((file, index) => (
-                              <li key={index} className="text-sm">
-                                {file.name} ({(file.size / 1024).toFixed(2)} KB)
-                              </li>
-                            ))}
-                          </ul>
+                {/* Document Uploads Section (hide for admins) */}
+                {(() => {
+                  const user = localStorage.getItem('user');
+                  const isAdmin = user && JSON.parse(user).role === 'ADMIN';
+                  return !isAdmin ? (
+                    <AccordionItem value="documents">
+                      <AccordionTrigger onClick={() => toggleSection("documents")} className="py-4">
+                        <div className="flex items-center gap-2">
+                          <Upload className="h-5 w-5" />
+                          <span>Document Uploads</span>
                         </div>
-                      )}
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <div className="space-y-4 mb-6">
+                          <div className="space-y-2">
+                            <Label htmlFor="documents">Upload Documents (PDF, JPG)</Label>
+                            <Input 
+                              id="documents" 
+                              type="file" 
+                              multiple
+                              accept=".pdf,.jpg,.jpeg,.png"
+                              onChange={handleFileChange}
+                              className="cursor-pointer"
+                            />
+                          </div>
+                          {formData.documents && formData.documents.length > 0 && (
+                            <div className="space-y-2">
+                              <Label>Uploaded Files</Label>
+                              <ul className="list-disc pl-5">
+                                {formData.documents.map((file, index) => (
+                                  <li key={index} className="text-sm">
+                                    {file.name} ({(file.size / 1024).toFixed(2)} KB)
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ) : null;
+                })()}
               </Accordion>
 
               <div className="flex justify-end mt-6">

@@ -19,9 +19,12 @@ const Navigation = () => {
 
   const navItems = [
     { name: "Dashboard", path: "/dashboard", icon: Users },
-    { name: "Add Info", path: "/add-person", icon: Plus },
     { name: "Profile", path: "/profile", icon: Settings },
   ];
+
+  if (!isAdmin) {
+    navItems.splice(1, 0, { name: "Add Info", path: "/add-person", icon: Plus });
+  }
 
   if (isAdmin) {
     navItems.push(
