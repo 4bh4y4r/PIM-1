@@ -31,8 +31,7 @@ const Navigation = () => {
       { name: "Search", path: "/search", icon: Search },
       { name: "Reports", path: "/reports", icon: BarChart3 },
       { name: "View Records", path: "/view-records", icon: Eye },
-      { name: "User Management", path: "/user-management", icon: User },
-      { name: "Admin", path: "/admin", icon: Settings }
+      { name: "User Management", path: "/user-management", icon: User }
     );
   }
 
