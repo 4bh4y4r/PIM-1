@@ -118,8 +118,11 @@ const Dashboard = () => {
       setLoading(true);
       const token = localStorage.getItem('token');
       
-      // For regular users, fetch all records
-      const endpoint = `${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/persons`;
+      // Fetch records (for admins, pull a large page to cover all records)
+      const base = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+      const endpoint = isAdmin
+        ? `${base}/api/persons?page=1&limit=10000&sortBy=createdAt&sortOrder=desc`
+        : `${base}/api/persons?page=1&limit=10000&sortBy=createdAt&sortOrder=desc`;
       
       if (!token) {
         throw new Error('Authentication token not found. Please log in again.');
@@ -145,8 +148,9 @@ const Dashboard = () => {
 
       const data = await response.json();
       
-      // Check if data is an array, if not, handle it appropriately
-      const dataArray = Array.isArray(data) ? data : data.persons || [];
+      // Response shape: { persons, pagination }
+      const dataArray = Array.isArray(data) ? data : (data.persons || []);
+      const pagination = Array.isArray(data) ? null : (data.pagination || null);
       
       // Transform and parse notes into explicit fields for proper display/filtering
       const transformedData = dataArray.map((person: any) => {
@@ -225,10 +229,11 @@ const Dashboard = () => {
           new Date(record.createdAt) >= thirtyDaysAgo
         ).length;
         
-        const inactiveRecords = transformedData.length - activeRecords;
+        const totalRecords = pagination?.total ?? transformedData.length;
+        const inactiveRecords = totalRecords - activeRecords;
         
         setAdminStats({
-          totalRecords: transformedData.length,
+          totalRecords,
           recordsLast7Days,
           activeRecords,
           inactiveRecords

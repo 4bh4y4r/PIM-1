@@ -105,4 +105,24 @@ npm run dev
   - Card View removed from My Information list for simplicity
 
 ## 🔌 Key API Endpoints
-- Auth: `
+- Auth:
+  - `POST /api/auth/register`
+  - `POST /api/auth/login`
+  - `GET /api/auth/profile`
+- Persons:
+  - `GET /api/persons?page=1&limit=10000&sortBy=createdAt&sortOrder=desc`
+  - `POST /api/persons`
+  - `GET /api/persons/:id`
+  - `PUT /api/persons/:id`
+  - `DELETE /api/persons/:id`
+- Reports:
+  - `GET /api/search/stats`
+  - `GET /api/search/demographics`
+- Utilities:
+  - `POST /api/persons/backfill/tags`
+
+## Admin Dashboard Stats
+- Total Records: uses backend pagination total when available
+- Last 7 Days: count of records created within last 7 days
+- Active Records: created within last 30 days
+- Inactive Records: Total - Active
