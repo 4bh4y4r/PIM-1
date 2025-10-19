@@ -33,6 +33,7 @@ const InfoForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [expandedSections, setExpandedSections] = useState<string[]>(["personal"]);
+  const [originalNotes, setOriginalNotes] = useState<string>('');
   
   useEffect(() => {
     if (id) {
@@ -60,6 +61,7 @@ const InfoForm = () => {
       }
       
       const data = await response.json();
+      setOriginalNotes(data.notes || '');
       
       // Parse address and notes fields
       let street = '', city = '', state = '', zip = '';
@@ -293,6 +295,49 @@ const InfoForm = () => {
         if (!categories.includes('Identification')) categories.push('Identification');
       }
 
+      // Parse original notes into a map and merge current values to preserve existing data on edit
+      const labels = [
+        'Gender','National ID','Aadhaar Number','PAN Number','Passport Number','Ration Card Number',
+        'Education','Occupation','Employer','Income','Bank Account','IFSC Code','Tax Filing Status',
+        'Blood Group','Allergies','Medical Conditions','Health Info'
+      ];
+      const parseToMap = (notesStr: string) => {
+        const m = new Map<string, string>();
+        for (const label of labels) {
+          const match = notesStr.match(new RegExp(`${label}: ([\s\S]*?)(?:\n|$)`));
+          if (match && match[1] != null) {
+            const val = match[1].trim();
+            if (val) m.set(label, val);
+          }
+        }
+        return m;
+      };
+      const existingMap = parseToMap(originalNotes || '');
+      const setIfValue = (label: string, value?: string) => {
+        if (value && String(value).trim() !== '') existingMap.set(label, String(value).trim());
+      };
+      setIfValue('Gender', formData.gender);
+      setIfValue('National ID', formData.nationalId);
+      setIfValue('Aadhaar Number', formData.aadhaarNumber);
+      setIfValue('PAN Number', formData.panNumber);
+      setIfValue('Passport Number', formData.passportNumber);
+      setIfValue('Ration Card Number', formData.rationCardNumber);
+      setIfValue('Education', formData.education);
+      setIfValue('Occupation', formData.occupation);
+      setIfValue('Employer', formData.employer);
+      setIfValue('Income', formData.income);
+      setIfValue('Bank Account', formData.bankAccount);
+      setIfValue('IFSC Code', formData.ifscCode);
+      setIfValue('Tax Filing Status', formData.taxFilingStatus);
+      setIfValue('Blood Group', formData.bloodGroup);
+      setIfValue('Allergies', formData.allergies);
+      setIfValue('Medical Conditions', formData.medicalConditions);
+      setIfValue('Health Info', formData.healthInfo);
+      const noteLines: string[] = [];
+      for (const label of labels) {
+        if (existingMap.has(label)) noteLines.push(`${label}: ${existingMap.get(label)}`);
+      }
+
       // Format the data to match the expected API format
       const personData = {
         firstName: formData.firstName,
@@ -301,25 +346,7 @@ const InfoForm = () => {
         phone: formData.phone,
         email: formData.email,
         address: `${formData.street || ''}, ${formData.city || ''}, ${formData.state || ''} ${formData.zip || ''}`.trim(),
-        notes: `
-          Gender: ${formData.gender || ''}
-          National ID: ${formData.nationalId || ''}
-          Education: ${formData.education || ''}
-          Occupation: ${formData.occupation || ''}
-          Employer: ${formData.employer || ''}
-          Income: ${formData.income || ''}
-          Bank Account: ${formData.bankAccount || ''}
-          IFSC Code: ${formData.ifscCode || ''}
-          Tax Filing Status: ${formData.taxFilingStatus || ''}
-          Aadhaar Number: ${formData.aadhaarNumber || ''}
-          PAN Number: ${formData.panNumber || ''}
-          Passport Number: ${formData.passportNumber || ''}
-          Ration Card Number: ${formData.rationCardNumber || ''}
-          Blood Group: ${formData.bloodGroup || ''}
-          Allergies: ${formData.allergies || ''}
-          Medical Conditions: ${formData.medicalConditions || ''}
-          Health Info: ${formData.healthInfo || ''}
-        `.trim(),
+        notes: noteLines.join('\n'),
         tags: categories.join(', ')
       };
       
