@@ -198,14 +198,20 @@ const MyInfo = () => {
   const deriveCategories = (p: Person) => {
     const categories: string[] = [];
     if (p.firstName || p.lastName || p.dateOfBirth || p.email || p.phone) categories.push('Personal');
-    // Identification from notes if present
-    if (p.notes && (/National ID:\s*\S+/.test(p.notes) || /Passport/i.test(p.notes) || /PAN/i.test(p.notes) || /Aadhaar/i.test(p.notes) || /Ration/i.test(p.notes))) {
+    // Identification: only if a non-empty value is present after known labels
+    if (p.notes && (
+      /National ID:\s*\S+/.test(p.notes) ||
+      /Aadhaar Number:\s*\S+/.test(p.notes) ||
+      /PAN Number:\s*\S+/.test(p.notes) ||
+      /Passport Number:\s*\S+/.test(p.notes) ||
+      /Ration Card Number:\s*\S+/.test(p.notes)
+    )) {
       categories.push('Identification');
     }
-    if (p.address && p.address.trim() !== ',' && p.address.trim() !== ', ,') categories.push('Address');
-    if (p.notes && (/Education:\s*\S+/.test(p.notes) || /Occupation:\s*\S+/.test(p.notes))) categories.push('Education');
-    if (p.notes && (/Income:\s*\S+/.test(p.notes) || /IFSC/i.test(p.notes))) categories.push('Financial');
-    if (p.notes && (/Health Info:\s*\S+/.test(p.notes) || /Allergies/i.test(p.notes) || /Medical/i.test(p.notes))) categories.push('Health');
+    if (p.address && p.address.trim() && p.address.trim() !== ',' && p.address.trim() !== ', ,') categories.push('Address');
+    if (p.notes && (/Education:\s*\S+/.test(p.notes) || /Occupation:\s*\S+/.test(p.notes) || /Employer:\s*\S+/.test(p.notes))) categories.push('Education');
+    if (p.notes && (/Income:\s*\S+/.test(p.notes) || /Bank Account:\s*\S+/.test(p.notes) || /IFSC Code:\s*\S+/.test(p.notes) || /Tax Filing Status:\s*\S+/.test(p.notes))) categories.push('Financial');
+    if (p.notes && (/Health Info:\s*\S+/.test(p.notes) || /Blood Group:\s*\S+/.test(p.notes) || /Allergies:\s*\S+/.test(p.notes) || /Medical Conditions:\s*\S+/.test(p.notes))) categories.push('Health');
     // Fallback to tags if present
     if (p.tags) {
       const tagList = p.tags.split(',').map(t => t.trim()).filter(Boolean);

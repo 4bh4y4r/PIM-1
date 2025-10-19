@@ -282,6 +282,17 @@ const InfoForm = () => {
         categories.push('Personal');
       }
 
+      // Also explicitly add Identification if any identification inputs are filled
+      if (
+        formData.aadhaarNumber ||
+        formData.panNumber ||
+        formData.passportNumber ||
+        formData.rationCardNumber ||
+        formData.nationalId
+      ) {
+        if (!categories.includes('Identification')) categories.push('Identification');
+      }
+
       // Format the data to match the expected API format
       const personData = {
         firstName: formData.firstName,

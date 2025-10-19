@@ -56,12 +56,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+// Card view removed
 
 interface InfoRecord {
   id: string;
@@ -130,7 +125,7 @@ const Dashboard = () => {
         throw new Error('Authentication token not found. Please log in again.');
       }
       
-      console.log('Fetching records from:', endpoint);
+      // Fetch records
       
       const response = await fetch(endpoint, {
         method: 'GET',
@@ -153,20 +148,50 @@ const Dashboard = () => {
       // Check if data is an array, if not, handle it appropriately
       const dataArray = Array.isArray(data) ? data : data.persons || [];
       
-      // Transform the data to match our InfoRecord interface
-      const transformedData = dataArray.map((person: any) => ({
-        id: person.id,
-        title: `${person.firstName} ${person.lastName}`,
-        category: person.tags || 'Personal',
-        createdAt: person.createdAt,
-        updatedAt: person.updatedAt,
-        createdBy: person.createdBy,
-        documentCount: 0, // Placeholder until we implement document uploads
-        data: {
-          ...person,
-          category: person.tags || 'Personal'
-        }
-      }));
+      // Transform and parse notes into explicit fields for proper display/filtering
+      const transformedData = dataArray.map((person: any) => {
+        const notes: string = person.notes || '';
+        const nationalId = notes.match(/National ID: (.*?)(?:\n|$)/)?.[1] || '';
+        const education = notes.match(/Education: (.*?)(?:\n|$)/)?.[1] || '';
+        const occupation = notes.match(/Occupation: (.*?)(?:\n|$)/)?.[1] || '';
+        const income = notes.match(/Income: (.*?)(?:\n|$)/)?.[1] || '';
+        const healthInfo = notes.match(/Health Info: ([\s\S]*?)(?:\n\s*$|$)/)?.[1]?.trim() || '';
+        const aadhaarNumber = notes.match(/Aadhaar Number: (.*?)(?:\n|$)/)?.[1] || '';
+        const panNumber = notes.match(/PAN Number: (.*?)(?:\n|$)/)?.[1] || '';
+        const passportNumber = notes.match(/Passport Number: (.*?)(?:\n|$)/)?.[1] || '';
+        const rationCardNumber = notes.match(/Ration Card Number: (.*?)(?:\n|$)/)?.[1] || '';
+        const employer = notes.match(/Employer: (.*?)(?:\n|$)/)?.[1] || '';
+        const bankAccount = notes.match(/Bank Account: (.*?)(?:\n|$)/)?.[1] || '';
+        const ifscCode = notes.match(/IFSC Code: (.*?)(?:\n|$)/)?.[1] || '';
+        const taxFilingStatus = notes.match(/Tax Filing Status: (.*?)(?:\n|$)/)?.[1] || '';
+
+        return {
+          id: person.id,
+          title: `${person.firstName} ${person.lastName}`,
+          category: person.tags || 'Personal',
+          createdAt: person.createdAt,
+          updatedAt: person.updatedAt,
+          createdBy: person.createdBy,
+          documentCount: 0,
+          data: {
+            ...person,
+            category: person.tags || 'Personal',
+            nationalId,
+            education,
+            occupation,
+            income,
+            healthInfo,
+            aadhaarNumber,
+            panNumber,
+            passportNumber,
+            rationCardNumber,
+            employer,
+            bankAccount,
+            ifscCode,
+            taxFilingStatus,
+          }
+        } as InfoRecord;
+      });
       
       setRecords(transformedData);
       
@@ -328,8 +353,14 @@ const Dashboard = () => {
       matchesCategory = record.category === 'Address' || 
         (record.data && record.data.address);
     } else if (categoryFilter === 'Identification') {
-      matchesCategory = record.category === 'Identification' || 
-        (record.data && (record.data.nationalId || record.data.gender));
+      matchesCategory = record.category.includes('Identification') || 
+        (record.data && (
+          record.data.nationalId ||
+          record.data.aadhaarNumber ||
+          record.data.panNumber ||
+          record.data.passportNumber ||
+          record.data.rationCardNumber
+        ));
     } else if (categoryFilter === 'Education') {
       matchesCategory = record.category === 'Education' || 
         (record.data && record.data.education);
@@ -574,14 +605,7 @@ const Dashboard = () => {
                   )}
                 </div>
               ) : (
-                <Tabs defaultValue="table" className="w-full">
-                  <TabsList className="mb-4">
-                    <TabsTrigger value="table">Table View</TabsTrigger>
-                    <TabsTrigger value="cards">Card View</TabsTrigger>
-                  </TabsList>
-                  
-                  <TabsContent value="table">
-                    <div className="space-y-6">
+                <div className="space-y-6">
                       {filteredRecords.map((record) => (
                         <div key={record.id} className="p-6 border rounded-lg">
                           <div className="flex justify-between items-center mb-4">
@@ -689,121 +713,7 @@ const Dashboard = () => {
                           </div>
                         </div>
                       ))}
-                    </div>
-                  </TabsContent>
-                  
-                  <TabsContent value="cards">
-                    <div className="space-y-6">
-                      {filteredRecords.map((record) => (
-                        <div key={record.id} className="p-6 border rounded-lg">
-                          <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-xl font-bold">{record.title}</h2>
-                            <div className="flex gap-2">
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => handleEdit(record)}
-                              >
-                                <Edit className="h-4 w-4 mr-2" /> Edit
-                              </Button>
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => handleView(record)}
-                              >
-                                <User className="h-4 w-4 mr-2" /> View
-                              </Button>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="text-red-500 border-red-200 hover:bg-red-50"
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" /> Delete
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      This will permanently delete the record "{record.title}".
-                                      This action cannot be undone.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() => handleDelete(record.id)}
-                                      className="bg-red-600 hover:bg-red-700"
-                                    >
-                                      Delete
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </div>
-                          </div>
-                          
-                          {(categoryFilter === 'all' || categoryFilter === 'Personal') && (
-                            <div className="mb-4 p-4 border rounded-md">
-                              <h3 className="text-lg font-medium mb-2">Personal Information</h3>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div><strong>First Name:</strong> {record.data?.firstName || 'N/A'}</div>
-                                <div><strong>Last Name:</strong> {record.data?.lastName || 'N/A'}</div>
-                                <div><strong>Email:</strong> {record.data?.email || 'N/A'}</div>
-                                <div><strong>Phone:</strong> {record.data?.phone || 'N/A'}</div>
-                                <div><strong>Gender:</strong> {record.data?.gender || 'N/A'}</div>
-                                <div><strong>Date of Birth:</strong> {record.data?.dateOfBirth || 'N/A'}</div>
-                              </div>
-                            </div>
-                          )}
-                          
-                          {(categoryFilter === 'all' || categoryFilter === 'Address') && (
-                            <div className="mb-4 p-4 border rounded-md">
-                              <h3 className="text-lg font-medium mb-2">Address Information</h3>
-                              <div><strong>Address:</strong> {record.data?.address || 'N/A'}</div>
-                            </div>
-                          )}
-                          
-                          {(categoryFilter === 'all' || categoryFilter === 'Identification') && (
-                            <div className="mb-4 p-4 border rounded-md">
-                              <h3 className="text-lg font-medium mb-2">Identification Information</h3>
-                              <div><strong>National ID:</strong> {record.data?.nationalId || 'N/A'}</div>
-                            </div>
-                          )}
-                          
-                          {(categoryFilter === 'all' || categoryFilter === 'Education') && (
-                            <div className="mb-4 p-4 border rounded-md">
-                              <h3 className="text-lg font-medium mb-2">Education Information</h3>
-                              <div><strong>Education:</strong> {record.data?.education || 'N/A'}</div>
-                            </div>
-                          )}
-                          
-                          {(categoryFilter === 'all' || categoryFilter === 'Financial') && (
-                            <div className="mb-4 p-4 border rounded-md">
-                              <h3 className="text-lg font-medium mb-2">Financial Information</h3>
-                              <div><strong>Occupation:</strong> {record.data?.occupation || 'N/A'}</div>
-                              <div><strong>Income:</strong> {record.data?.income || 'N/A'}</div>
-                            </div>
-                          )}
-                          
-                          {(categoryFilter === 'all' || categoryFilter === 'Health') && (
-                            <div className="mb-4 p-4 border rounded-md">
-                              <h3 className="text-lg font-medium mb-2">Health Information</h3>
-                              <div><strong>Health Info:</strong> {record.data?.healthInfo || 'N/A'}</div>
-                            </div>
-                          )}
-                          
-                          <div className="mt-4 text-sm text-muted-foreground">
-                            Added on {new Date(record.createdAt).toLocaleDateString()} • 
-                            Category: <Badge variant="outline">{record.category}</Badge>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </TabsContent>
-                </Tabs>
+                  </div>
               )}
             </CardContent>
           </Card>

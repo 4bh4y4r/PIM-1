@@ -26,13 +26,19 @@ const deriveTags = (input: {
   if (input.address && input.address.trim() && input.address.trim() !== ',' && input.address.trim() !== ', ,') {
     categories.push('Address');
   }
-  if (/National ID:\s*\S+/i.test(notes) || /Aadhaar/i.test(notes) || /PAN/i.test(notes) || /Passport/i.test(notes) || /Ration/i.test(notes)) {
+  if (
+    /National ID:\s*\S+/i.test(notes) ||
+    /Aadhaar Number:\s*\S+/i.test(notes) ||
+    /PAN Number:\s*\S+/i.test(notes) ||
+    /Passport Number:\s*\S+/i.test(notes) ||
+    /Ration Card Number:\s*\S+/i.test(notes)
+  ) {
     categories.push('Identification');
   }
   if (/Education:\s*\S+/i.test(notes) || /Occupation:\s*\S+/i.test(notes) || /Employer:\s*\S+/i.test(notes)) {
     categories.push('Education');
   }
-  if (/Income:\s*\S+/i.test(notes) || /Bank Account:\s*\S+/i.test(notes) || /IFSC/i.test(notes) || /Tax Filing Status:\s*\S+/i.test(notes)) {
+  if (/Income:\s*\S+/i.test(notes) || /Bank Account:\s*\S+/i.test(notes) || /IFSC Code:\s*\S+/i.test(notes) || /Tax Filing Status:\s*\S+/i.test(notes)) {
     categories.push('Financial');
   }
   if (/Health Info:\s*\S+/i.test(notes) || /Blood Group:\s*\S+/i.test(notes) || /Allergies:\s*\S+/i.test(notes) || /Medical Conditions:\s*\S+/i.test(notes)) {
@@ -59,11 +65,17 @@ export const createPerson = async (req: Request, res: Response) => {
 
     const userId = req.user.id;
 
-    // Compute tags server-side to ensure consistent categories
-    const computedTags = deriveTags({ firstName, lastName, email, phone, address, dateOfBirth, notes }).join(', ');
+    // Compute tags server-side and merge with client-provided tags (if any)
+    const derived = deriveTags({ firstName, lastName, email, phone, address, dateOfBirth, notes });
+    const provided = (tags || '')
+      .split(',')
+      .map((t: string) => t.trim())
+      .filter(Boolean);
+    const tagSet = new Set<string>([...provided, ...derived]);
+    const computedTags = Array.from(tagSet).join(', ');
 
     // Safeguard notes size in case DB column has size limits (pre-migration)
-    const MAX_NOTES_LENGTH = 180; // keep safely under common VARCHAR limits
+    const MAX_NOTES_LENGTH = 4000; // generous limit; still guards against extreme payloads
     const safeNotes = notes ? String(notes).slice(0, MAX_NOTES_LENGTH) : null;
 
     const person = await prisma.person.create({
@@ -229,10 +241,16 @@ export const updatePerson = async (req: Request, res: Response) => {
     }
 
     // Update person
-    // Compute tags server-side to ensure consistent categories
-    const computedTags = deriveTags({ firstName, lastName, email, phone, address, dateOfBirth, notes }).join(', ');
+    // Compute tags server-side and merge with client-provided tags (if any)
+    const derivedUpdate = deriveTags({ firstName, lastName, email, phone, address, dateOfBirth, notes });
+    const providedUpdate = (tags || '')
+      .split(',')
+      .map((t: string) => t.trim())
+      .filter(Boolean);
+    const tagSetUpdate = new Set<string>([...providedUpdate, ...derivedUpdate]);
+    const computedTags = Array.from(tagSetUpdate).join(', ');
 
-    const MAX_NOTES_LENGTH_UPDATE = 180;
+    const MAX_NOTES_LENGTH_UPDATE = 4000;
     const safeNotesUpdate = notes ? String(notes).slice(0, MAX_NOTES_LENGTH_UPDATE) : undefined;
 
     const updatedPerson = await prisma.person.update({
