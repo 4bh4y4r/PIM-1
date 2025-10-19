@@ -4,7 +4,8 @@ import {
   getPersons, 
   getPersonById, 
   updatePerson, 
-  deletePerson 
+  deletePerson,
+  backfillPersonTags
 } from '../controllers/person.controller';
 import { authenticate } from '../middleware/auth.middleware';
 
@@ -19,5 +20,7 @@ router.get('/', getPersons);
 router.get('/:id', getPersonById);
 router.put('/:id', updatePerson);
 router.delete('/:id', deletePerson);
+// Admin or user-scoped backfill of tags based on data
+router.post('/backfill/tags', backfillPersonTags);
 
 export default router;

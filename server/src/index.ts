@@ -13,8 +13,7 @@ import relationshipRoutes from './routes/relationship.routes';
 import activityRoutes from './routes/activity.routes';
 import userRoutes from './routes/user.routes';
 import swaggerUi from 'swagger-ui-express';
-// @ts-ignore
-import swaggerDocument from './swagger.json';
+import fs from 'fs';
 
 // Load environment variables
 dotenv.config();
@@ -30,8 +29,32 @@ const prisma = new PrismaClient();
 // Middleware
 
 app.use(cors({
-  origin: ['http://localhost:8083', 'http://192.168.1.31:8080', 'http://localhost:8080'],
-  credentials: true
+  origin: [
+    'http://localhost:8080',
+    'http://localhost:8082',
+    'http://localhost:8083',
+    'http://192.168.1.31:8080',
+    'http://192.168.1.31:8082',
+    'http://192.168.1.31:8083'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// Explicitly handle preflight requests
+app.options('*', cors({
+  origin: [
+    'http://localhost:8080',
+    'http://localhost:8082',
+    'http://localhost:8083',
+    'http://192.168.1.31:8080',
+    'http://192.168.1.31:8082',
+    'http://192.168.1.31:8083'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 app.use(cookieParser());
@@ -39,9 +62,22 @@ app.use(cookieParser());
 // Serve static files from uploads directory
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// API Documentation
-// @ts-ignore
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+// API Documentation: load swagger.json from dist or fallback to src
+try {
+  let swaggerPath = path.join(__dirname, 'swagger.json');
+  if (!fs.existsSync(swaggerPath)) {
+    swaggerPath = path.join(__dirname, '../src/swagger.json');
+  }
+  if (fs.existsSync(swaggerPath)) {
+    const swaggerJson = JSON.parse(fs.readFileSync(swaggerPath, 'utf-8'));
+    // @ts-ignore
+    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerJson));
+  } else {
+    console.warn('swagger.json not found; /api-docs will be unavailable');
+  }
+} catch (e) {
+  console.warn('Failed to load swagger.json; /api-docs disabled', e);
+}
 
 // Routes
 app.use('/api/auth', authRoutes);

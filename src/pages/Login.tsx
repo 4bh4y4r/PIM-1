@@ -19,7 +19,8 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/login`, {
+      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+      const response = await fetch(`${baseUrl}/api/auth/login`, {
         method: 'POST',
         mode: 'cors',
         credentials: 'include',

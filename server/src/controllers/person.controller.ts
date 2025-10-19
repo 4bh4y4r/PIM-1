@@ -2,6 +2,47 @@ import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
+// Derive category tags from provided fields and notes
+const deriveTags = (input: {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  address?: string | null;
+  dateOfBirth?: string | Date | null;
+  notes?: string | null;
+}) => {
+  const categories: string[] = [];
+  const notes = input.notes || '';
+  if (
+    (input.firstName && input.firstName.trim()) ||
+    (input.lastName && input.lastName.trim()) ||
+    (input.email && input.email.trim()) ||
+    (input.phone && input.phone.trim()) ||
+    input.dateOfBirth
+  ) {
+    categories.push('Personal');
+  }
+  if (input.address && input.address.trim() && input.address.trim() !== ',' && input.address.trim() !== ', ,') {
+    categories.push('Address');
+  }
+  if (/National ID:\s*\S+/i.test(notes) || /Aadhaar/i.test(notes) || /PAN/i.test(notes) || /Passport/i.test(notes) || /Ration/i.test(notes)) {
+    categories.push('Identification');
+  }
+  if (/Education:\s*\S+/i.test(notes) || /Occupation:\s*\S+/i.test(notes) || /Employer:\s*\S+/i.test(notes)) {
+    categories.push('Education');
+  }
+  if (/Income:\s*\S+/i.test(notes) || /Bank Account:\s*\S+/i.test(notes) || /IFSC/i.test(notes) || /Tax Filing Status:\s*\S+/i.test(notes)) {
+    categories.push('Financial');
+  }
+  if (/Health Info:\s*\S+/i.test(notes) || /Blood Group:\s*\S+/i.test(notes) || /Allergies:\s*\S+/i.test(notes) || /Medical Conditions:\s*\S+/i.test(notes)) {
+    categories.push('Health');
+  }
+  // Ensure unique and stable order
+  const seen = new Set<string>();
+  return categories.filter((c) => (seen.has(c) ? false : (seen.add(c), true)));
+};
+
 // Create a new person
 export const createPerson = async (req: Request, res: Response) => {
   try {
@@ -18,6 +59,13 @@ export const createPerson = async (req: Request, res: Response) => {
 
     const userId = req.user.id;
 
+    // Compute tags server-side to ensure consistent categories
+    const computedTags = deriveTags({ firstName, lastName, email, phone, address, dateOfBirth, notes }).join(', ');
+
+    // Safeguard notes size in case DB column has size limits (pre-migration)
+    const MAX_NOTES_LENGTH = 180; // keep safely under common VARCHAR limits
+    const safeNotes = notes ? String(notes).slice(0, MAX_NOTES_LENGTH) : null;
+
     const person = await prisma.person.create({
       data: {
         firstName,
@@ -26,8 +74,8 @@ export const createPerson = async (req: Request, res: Response) => {
         phone,
         address,
         dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
-        tags,
-        notes,
+        tags: computedTags || tags,
+        notes: safeNotes,
         createdBy: { connect: { id: userId } }
       }
     });
@@ -181,6 +229,12 @@ export const updatePerson = async (req: Request, res: Response) => {
     }
 
     // Update person
+    // Compute tags server-side to ensure consistent categories
+    const computedTags = deriveTags({ firstName, lastName, email, phone, address, dateOfBirth, notes }).join(', ');
+
+    const MAX_NOTES_LENGTH_UPDATE = 180;
+    const safeNotesUpdate = notes ? String(notes).slice(0, MAX_NOTES_LENGTH_UPDATE) : undefined;
+
     const updatedPerson = await prisma.person.update({
       where: { id },
       data: {
@@ -190,8 +244,8 @@ export const updatePerson = async (req: Request, res: Response) => {
         phone,
         address,
         dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
-        tags,
-        notes
+        tags: computedTags || tags,
+        notes: safeNotesUpdate
       }
     });
 
@@ -212,6 +266,43 @@ export const updatePerson = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Update person error:', error);
     return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Backfill tags for existing records
+export const backfillPersonTags = async (req: Request, res: Response) => {
+  try {
+    const isAdmin = req.user.role === 'ADMIN';
+    const where: any = {};
+    if (!isAdmin) {
+      where.createdById = req.user.id;
+    }
+
+    const persons = await prisma.person.findMany({ where });
+    let updatedCount = 0;
+    for (const p of persons) {
+      const computed = deriveTags({
+        firstName: p.firstName,
+        lastName: p.lastName,
+        email: p.email || undefined,
+        phone: p.phone || undefined,
+        address: p.address || undefined,
+        dateOfBirth: p.dateOfBirth || undefined,
+        notes: p.notes || undefined,
+      }).join(', ');
+      if (computed && computed !== (p.tags || '')) {
+        await prisma.person.update({
+          where: { id: p.id },
+          data: { tags: computed }
+        });
+        updatedCount++;
+      }
+    }
+
+    return res.status(200).json({ message: 'Backfill complete', updated: updatedCount, total: persons.length });
+  } catch (error) {
+    console.error('Backfill tags error:', error);
+    return res.status(500).json({ message: 'Server error during backfill' });
   }
 };
 

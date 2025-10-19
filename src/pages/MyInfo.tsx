@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Navigation from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -61,6 +62,7 @@ interface Person {
 
 const MyInfo = () => {
   const [persons, setPersons] = useState<Person[]>([]);
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -119,18 +121,7 @@ const MyInfo = () => {
   };
 
   const handleEdit = (person: Person) => {
-    setEditingPerson(person);
-    setEditFormData({
-      firstName: person.firstName,
-      lastName: person.lastName,
-      email: person.email,
-      phone: person.phone,
-      address: person.address,
-      dateOfBirth: person.dateOfBirth ? person.dateOfBirth.split('T')[0] : '',
-      tags: person.tags,
-      notes: person.notes,
-    });
-    setIsEditDialogOpen(true);
+    navigate(`/info-form/${person.id}`);
   };
 
   const handleUpdate = async () => {
@@ -203,6 +194,25 @@ const MyInfo = () => {
     person.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     person.phone.includes(searchTerm)
   );
+
+  const deriveCategories = (p: Person) => {
+    const categories: string[] = [];
+    if (p.firstName || p.lastName || p.dateOfBirth || p.email || p.phone) categories.push('Personal');
+    // Identification from notes if present
+    if (p.notes && (/National ID:\s*\S+/.test(p.notes) || /Passport/i.test(p.notes) || /PAN/i.test(p.notes) || /Aadhaar/i.test(p.notes) || /Ration/i.test(p.notes))) {
+      categories.push('Identification');
+    }
+    if (p.address && p.address.trim() !== ',' && p.address.trim() !== ', ,') categories.push('Address');
+    if (p.notes && (/Education:\s*\S+/.test(p.notes) || /Occupation:\s*\S+/.test(p.notes))) categories.push('Education');
+    if (p.notes && (/Income:\s*\S+/.test(p.notes) || /IFSC/i.test(p.notes))) categories.push('Financial');
+    if (p.notes && (/Health Info:\s*\S+/.test(p.notes) || /Allergies/i.test(p.notes) || /Medical/i.test(p.notes))) categories.push('Health');
+    // Fallback to tags if present
+    if (p.tags) {
+      const tagList = p.tags.split(',').map(t => t.trim()).filter(Boolean);
+      for (const t of tagList) if (!categories.includes(t)) categories.push(t);
+    }
+    return Array.from(new Set(categories));
+  };
 
   if (loading) {
     return (
@@ -343,121 +353,30 @@ const MyInfo = () => {
                         {person.dateOfBirth ? new Date(person.dateOfBirth).toLocaleDateString() : '-'}
                       </TableCell>
                       <TableCell>
-                        {person.tags ? (
-                          <div className="flex flex-wrap gap-1">
-                            {person.tags.split(',').map((tag, index) => (
+                        <div className="flex flex-wrap gap-1">
+                          {deriveCategories(person).length > 0 ? (
+                            deriveCategories(person).map((cat, index) => (
                               <Badge key={index} variant="secondary" className="text-xs">
-                                {tag.trim()}
+                                {cat}
                               </Badge>
-                            ))}
-                          </div>
-                        ) : '-'}
+                            ))
+                          ) : (
+                            <span>-</span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         {new Date(person.createdAt).toLocaleDateString()}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <Dialog open={isEditDialogOpen && editingPerson?.id === person.id} onOpenChange={setIsEditDialogOpen}>
-                            <DialogTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleEdit(person)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-2xl">
-                              <DialogHeader>
-                                <DialogTitle>Edit Record</DialogTitle>
-                                <DialogDescription>
-                                  Update the information for {person.firstName} {person.lastName}
-                                </DialogDescription>
-                              </DialogHeader>
-                              <div className="grid gap-4 py-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div>
-                                    <Label htmlFor="firstName">First Name</Label>
-                                    <Input
-                                      id="firstName"
-                                      value={editFormData.firstName || ''}
-                                      onChange={(e) => setEditFormData({...editFormData, firstName: e.target.value})}
-                                    />
-                                  </div>
-                                  <div>
-                                    <Label htmlFor="lastName">Last Name</Label>
-                                    <Input
-                                      id="lastName"
-                                      value={editFormData.lastName || ''}
-                                      onChange={(e) => setEditFormData({...editFormData, lastName: e.target.value})}
-                                    />
-                                  </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div>
-                                    <Label htmlFor="email">Email</Label>
-                                    <Input
-                                      id="email"
-                                      type="email"
-                                      value={editFormData.email || ''}
-                                      onChange={(e) => setEditFormData({...editFormData, email: e.target.value})}
-                                    />
-                                  </div>
-                                  <div>
-                                    <Label htmlFor="phone">Phone</Label>
-                                    <Input
-                                      id="phone"
-                                      value={editFormData.phone || ''}
-                                      onChange={(e) => setEditFormData({...editFormData, phone: e.target.value})}
-                                    />
-                                  </div>
-                                </div>
-                                <div>
-                                  <Label htmlFor="address">Address</Label>
-                                  <Input
-                                    id="address"
-                                    value={editFormData.address || ''}
-                                    onChange={(e) => setEditFormData({...editFormData, address: e.target.value})}
-                                  />
-                                </div>
-                                <div>
-                                  <Label htmlFor="dateOfBirth">Date of Birth</Label>
-                                  <Input
-                                    id="dateOfBirth"
-                                    type="date"
-                                    value={editFormData.dateOfBirth || ''}
-                                    onChange={(e) => setEditFormData({...editFormData, dateOfBirth: e.target.value})}
-                                  />
-                                </div>
-                                <div>
-                                  <Label htmlFor="tags">Tags (comma-separated)</Label>
-                                  <Input
-                                    id="tags"
-                                    value={editFormData.tags || ''}
-                                    onChange={(e) => setEditFormData({...editFormData, tags: e.target.value})}
-                                  />
-                                </div>
-                                <div>
-                                  <Label htmlFor="notes">Notes</Label>
-                                  <Textarea
-                                    id="notes"
-                                    value={editFormData.notes || ''}
-                                    onChange={(e) => setEditFormData({...editFormData, notes: e.target.value})}
-                                    rows={3}
-                                  />
-                                </div>
-                              </div>
-                              <DialogFooter>
-                                <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                                  Cancel
-                                </Button>
-                                <Button onClick={handleUpdate}>
-                                  Update Record
-                                </Button>
-                              </DialogFooter>
-                            </DialogContent>
-                          </Dialog>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEdit(person)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
                           
                           <AlertDialog>
                             <AlertDialogTrigger asChild>

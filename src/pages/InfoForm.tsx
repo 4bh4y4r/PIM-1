@@ -49,7 +49,7 @@ const InfoForm = () => {
         return;
       }
       
-      const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/persons/${recordId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/persons/${recordId}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -74,6 +74,9 @@ const InfoForm = () => {
       
       // Parse notes field
       let gender = '', nationalId = '', education = '', occupation = '', income = '', healthInfo = '';
+      let aadhaarNumber = '', panNumber = '', passportNumber = '', rationCardNumber = '';
+      let employer = '', bankAccount = '', ifscCode = '', taxFilingStatus = '';
+      let bloodGroup = '', allergies = '', medicalConditions = '';
       if (data.notes) {
         const notes = data.notes;
         gender = notes.match(/Gender: (.*?)(?:\n|$)/)?.[1] || '';
@@ -82,30 +85,50 @@ const InfoForm = () => {
         occupation = notes.match(/Occupation: (.*?)(?:\n|$)/)?.[1] || '';
         income = notes.match(/Income: (.*?)(?:\n|$)/)?.[1] || '';
         healthInfo = notes.match(/Health Info: (.*?)(?:\n|$)/)?.[1] || '';
+        aadhaarNumber = notes.match(/Aadhaar Number: (.*?)(?:\n|$)/)?.[1] || '';
+        panNumber = notes.match(/PAN Number: (.*?)(?:\n|$)/)?.[1] || '';
+        passportNumber = notes.match(/Passport Number: (.*?)(?:\n|$)/)?.[1] || '';
+        rationCardNumber = notes.match(/Ration Card Number: (.*?)(?:\n|$)/)?.[1] || '';
+        employer = notes.match(/Employer: (.*?)(?:\n|$)/)?.[1] || '';
+        bankAccount = notes.match(/Bank Account: (.*?)(?:\n|$)/)?.[1] || '';
+        ifscCode = notes.match(/IFSC Code: (.*?)(?:\n|$)/)?.[1] || '';
+        taxFilingStatus = notes.match(/Tax Filing Status: (.*?)(?:\n|$)/)?.[1] || '';
+        bloodGroup = notes.match(/Blood Group: (.*?)(?:\n|$)/)?.[1] || '';
+        allergies = notes.match(/Allergies: (.*?)(?:\n|$)/)?.[1] || '';
+        medicalConditions = notes.match(/Medical Conditions: ([\s\S]*?)(?:\n\s*$|$)/)?.[1]?.trim() || '';
       }
       
-      setFormData({
+      setFormData(prev => ({
+        ...prev,
         firstName: data.firstName || '',
         lastName: data.lastName || '',
-        dateOfBirth: data.dateOfBirth || '',
+        dateOfBirth: data.dateOfBirth ? String(data.dateOfBirth).split('T')[0] : '',
         gender,
         email: data.email || '',
         phone: data.phone || '',
         nationalId,
-        aadhaarNumber: '',
-        panNumber: '',
-        passportNumber: '',
-        rationCardNumber: '',
+        aadhaarNumber,
+        panNumber,
+        passportNumber,
+        rationCardNumber,
         street,
         city,
         state,
         zip,
         education,
         occupation,
+        employer,
+        bankAccount,
+        ifscCode,
+        taxFilingStatus,
         income,
         healthInfo,
-        category: data.tags || 'Personal'
-      });
+        bloodGroup,
+        allergies,
+        medicalConditions,
+        // keep documents array defined to avoid render crash
+        documents: prev.documents || []
+      }));
       
     } catch (error) {
       console.error('Error fetching record:', error);
@@ -210,7 +233,55 @@ const InfoForm = () => {
         return;
       }
       
-      // Create FormData for file uploads
+      // Derive categories based on filled sections
+      const categories: string[] = [];
+      // Personal
+      if (
+        formData.firstName ||
+        formData.lastName ||
+        formData.dateOfBirth ||
+        formData.gender ||
+        formData.email ||
+        formData.phone
+      ) {
+        categories.push('Personal');
+      }
+      // Identification
+      if (
+        formData.aadhaarNumber ||
+        formData.panNumber ||
+        formData.passportNumber ||
+        formData.rationCardNumber ||
+        formData.nationalId
+      ) {
+        categories.push('Identification');
+      }
+      // Address
+      if (formData.street || formData.city || formData.state || formData.zip) {
+        categories.push('Address');
+      }
+      // Education & Employment
+      if (formData.education || formData.occupation || formData.employer) {
+        categories.push('Education');
+      }
+      // Financial/Tax
+      if (formData.bankAccount || formData.ifscCode || formData.taxFilingStatus) {
+        categories.push('Financial');
+      }
+      // Health
+      if (formData.bloodGroup || formData.allergies || formData.medicalConditions) {
+        categories.push('Health');
+      }
+      // Documents
+      if (formData.documents && formData.documents.length > 0) {
+        categories.push('Documents');
+      }
+
+      // Ensure at least Personal if nothing detected
+      if (categories.length === 0) {
+        categories.push('Personal');
+      }
+
       // Format the data to match the expected API format
       const personData = {
         firstName: formData.firstName,
@@ -224,16 +295,27 @@ const InfoForm = () => {
           National ID: ${formData.nationalId || ''}
           Education: ${formData.education || ''}
           Occupation: ${formData.occupation || ''}
+          Employer: ${formData.employer || ''}
           Income: ${formData.income || ''}
+          Bank Account: ${formData.bankAccount || ''}
+          IFSC Code: ${formData.ifscCode || ''}
+          Tax Filing Status: ${formData.taxFilingStatus || ''}
+          Aadhaar Number: ${formData.aadhaarNumber || ''}
+          PAN Number: ${formData.panNumber || ''}
+          Passport Number: ${formData.passportNumber || ''}
+          Ration Card Number: ${formData.rationCardNumber || ''}
+          Blood Group: ${formData.bloodGroup || ''}
+          Allergies: ${formData.allergies || ''}
+          Medical Conditions: ${formData.medicalConditions || ''}
           Health Info: ${formData.healthInfo || ''}
         `.trim(),
-        tags: `${formData.category || 'Personal'}`
+        tags: categories.join(', ')
       };
       
       // Set the API endpoint and method based on whether we're editing or creating
       const url = isEditMode 
-        ? `${import.meta.env.VITE_API_URL || ''}/api/persons/${id}`
-        : `${import.meta.env.VITE_API_URL || ''}/api/persons`;
+        ? `${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/persons/${id}`
+        : `${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/persons`;
         
       const response = await fetch(url, {
         method: isEditMode ? 'PUT' : 'POST',
@@ -606,7 +688,7 @@ const InfoForm = () => {
                           className="cursor-pointer"
                         />
                       </div>
-                      {formData.documents.length > 0 && (
+                      {formData.documents && formData.documents.length > 0 && (
                         <div className="space-y-2">
                           <Label>Uploaded Files</Label>
                           <ul className="list-disc pl-5">
