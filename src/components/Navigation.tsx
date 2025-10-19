@@ -20,7 +20,6 @@ const Navigation = () => {
   const navItems = [
     { name: "Dashboard", path: "/dashboard", icon: Users },
     { name: "Add Person", path: "/add-person", icon: Plus },
-    { name: "My Info", path: "/my-info", icon: UserCircle },
     { name: "Profile", path: "/profile", icon: Settings },
   ];
 
