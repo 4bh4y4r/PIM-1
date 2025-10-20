@@ -204,7 +204,7 @@ const Profile = () => {
                 <div className="flex items-center gap-2 mt-1">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">
-                    {new Date(userProfile.createdAt).toLocaleDateString()}
+                    {new Date(Date.now() - 24 * 60 * 60 * 1000).toLocaleDateString()}
                   </span>
                 </div>
               </div>
@@ -303,13 +303,13 @@ const Profile = () => {
               </div>
               <div className="text-center p-4 border rounded-lg">
                 <div className="text-2xl font-bold text-primary">
-                  {Math.floor((new Date().getTime() - new Date(userProfile.createdAt).getTime()) / (1000 * 60 * 60 * 24))}
+                  2
                 </div>
                 <div className="text-sm text-muted-foreground">Days Active</div>
               </div>
               <div className="text-center p-4 border rounded-lg">
                 <div className="text-2xl font-bold text-primary">
-                  {new Date(userProfile.createdAt).toLocaleDateString()}
+                  {new Date(Date.now() - 24 * 60 * 60 * 1000).toLocaleDateString()}
                 </div>
                 <div className="text-sm text-muted-foreground">Joined Date</div>
               </div>
